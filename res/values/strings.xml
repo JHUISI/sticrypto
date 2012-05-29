@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <string name="hello">Hello World, VisavisActivity!</string>
+    <string name="app_name">Vis-a-vis</string>
+    <string name="share">Share Status</string>
+    <string name="check">Check notifications</string>
+    <string name="send">Send Notifications</string>
+
+</resources>
