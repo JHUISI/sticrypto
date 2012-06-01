@@ -1,7 +1,7 @@
 package edu.jhu.isi.hms.visavis;
 
 import org.jivesoftware.smack.Chat;
-import org.jivesoftware.smack.ChatManager;
+
 import org.jivesoftware.smack.Connection;
 import org.jivesoftware.smack.MessageListener;
 import org.jivesoftware.smack.XMPPConnection;
@@ -9,11 +9,8 @@ import org.jivesoftware.smack.XMPPException;
 import org.jivesoftware.smack.packet.Message;
 
 import android.app.Activity;
-import android.app.AlertDialog;
-import android.content.Context;
 import android.os.AsyncTask;
 import android.util.Log;
-import android.widget.EditText;
 import android.widget.TextView;
 
 public class VerifierTask extends AsyncTask<String, Void, StdTestResult> {
@@ -23,7 +20,7 @@ public class VerifierTask extends AsyncTask<String, Void, StdTestResult> {
 	private final String password;
 	private final String tag= VerifierTask.class.getName();
 	private final Activity activity;
-	private Message message;
+	private final Notifier<Message> mutex = new Notifier<Message>();
 	public VerifierTask(String proverId, String verifierId, String password,
 			String chatServer, Activity activity) {
 		super();
@@ -38,66 +35,69 @@ public class VerifierTask extends AsyncTask<String, Void, StdTestResult> {
 	@Override
 	protected StdTestResult doInBackground(String... params) {
 		try {
-			final Object mutex = new Object();
-			ChatManager cm = setup();
-	
-			final Chat newChat = cm.createChat(makeaddress(),
-					new MessageListener() {
-						public void processMessage(Chat chat, Message message) {
-						}
-					});
-			
-			newChat.addMessageListener(		new MessageListener() {
-						public void processMessage(Chat chat, Message message) {
-							Log.v(tag, message.getBody());
-							VerifierTask.this.message = message; 
-							synchronized (chat) {
-							    chat.notifyAll();
-							}
-							Log.v(tag,"notified");
-						}
-					});
-			try{
-				newChat.sendMessage("hello");
-				
-				Log.v(tag,"done waiting");
-				waitOnMessage(newChat);
-				StdTestResult t = new StdTestResult();
-				t.name=message.getBody();
-				return t;
-			}catch(XMPPException e){
-				Log.e(this.tag,"Unable to send hello message",e);
+			Chat chat = setup();
+			try
+			{
+				return protocol(chat);
+			} catch (XMPPException e) {
+				Log.e(this.tag,"Unable to execute protocol",e);
 			}
 		} catch (XMPPException e) {
-			Log.e(this.tag,"Unable to set up connection",e);
+			Log.e(this.tag,"Unable to set up chat",e);
 		}
 		return null;
 	}
+	
+	private StdTestResult protocol(Chat chat) throws XMPPException{
+		StdTestResult t = verify(chat);
+		//proof(char);
+		return t;
+	}
+	
+	private StdTestResult verify(Chat chat)throws XMPPException {
+		try{
+			chat.sendMessage("hello");
+			Log.v(tag,"done waiting");
+			StdTestResult t = new StdTestResult();
+			// fix me handle null
+			Message m = mutex.waitForMessage();
+			t.name= m.getBody();
+			return t;
+		}catch(XMPPException e){
+			Log.e(this.tag,"Verifier unable to send hello message",e);
+			throw e;
+		}
+	}
+	
+	private void proof(Chat chat) throws XMPPException{
+		try{
+			Log.v(tag,"Proover waiting on hello");
+			Message m = mutex.waitForMessage();
+			chat.sendMessage("sample std result");
+			return;
+		}catch(XMPPException e){
+			Log.e(this.tag,"Verifier unable to send hello message",e);
+			throw e;
+		}
+	}
+	
 	protected void onPostExecute(StdTestResult t){
 		((TextView) activity.findViewById(R.id.t)).setText(t.name);
 	}
 	
-	private void waitOnMessage(final Object mutex){
-		Log.v(tag,"at sychronized block");
-		//FIXME add retry limit and timeout
-		synchronized (mutex) {
-			while(message == null){
-				Log.v(tag,"waiting");
-				try {
-					mutex.wait();
-				} catch (InterruptedException e) {
-					Log.wtf(tag,"Waiting interupted",e);
-					return;
-				}	
-			}
-		}
-	}
-	
-	private  ChatManager setup() throws XMPPException  {
+
+	private  Chat setup() throws XMPPException  {
 		Connection con = new XMPPConnection(this.chatServer);
 		con.connect();
 		con.login(this.verifierId, this.password);
-		return con.getChatManager();
+		final Chat newChat = con.getChatManager().createChat(makeaddress(),
+				new MessageListener() {
+					public void processMessage(Chat chat, Message message) {
+						Log.v(tag,String.format("message recieved: %s", message));
+						mutex.messageArived(message);
+					}
+				});
+		return newChat;	
 	}
 	
 	private String makeaddress(){

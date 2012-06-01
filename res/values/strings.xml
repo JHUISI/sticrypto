@@ -6,5 +6,7 @@
     <string name="share">Share Status</string>
     <string name="check">Check notifications</string>
     <string name="send">Send Notifications</string>
-
+	<string name= "username">christina</string>
+	<string name= "password">password</string>
+	<string name= "XMPPServer">128.220.247.239</string>
 </resources>
