@@ -32,7 +32,7 @@ public class VisavisActivity extends Activity {
 			public void onClick(View v) {
 				Log.v("STD", "changing intents");
 				share.setBackgroundColor(20);
-				Intent i = new Intent(v.getContext(), ShareActivity.class);
+				Intent i = new Intent(v.getContext(), StatusActivity.class);
 				startActivity(i);
 			}
 
@@ -48,40 +48,4 @@ public class VisavisActivity extends Activity {
 
 		});
 	}
-
-//	class XMPPtest extends AsyncTask<String, Void, Void> {
-//
-//
-//		@Override
-//		protected Void doInBackground(String... params) {
-//			Connection con = new XMPPConnection("128.220.247.239");
-//			try {
-//				con.connect();
-//				con.login("christina", "password");
-//			} catch (XMPPException e1) {
-//				// TODO Auto-generated catch block
-//				Log.e("STD", e1.toString());
-//				e1.printStackTrace();
-//			}
-//			// Assume we've created a Connection name "connection".
-//			ChatManager chatmanager = con.getChatManager();
-//		//	chatmanager.addChatListener(arg0)
-//			Chat newChat = chatmanager.createChat("ian@128.220.247.239",
-//					new MessageListener() {
-//						public void processMessage(Chat chat, Message message) {
-//							Log.v("STD", message.getBody());
-//						}
-//					});
-//
-//			try {
-//				Log.v("STD", "sending message");
-//				newChat.sendMessage(params[0]);
-//				Log.v("STD", "message sent");
-//			} catch (XMPPException e) {
-//				Log.e("STD", e.toString());
-//				System.out.println("Error Delivering block");
-//			}
-//			return null;
-//		}
-//	}
 }

@@ -19,6 +19,7 @@
             </intent-filter>
         </activity>
         <activity android:name="ShareActivity"></activity>
+        <activity android:name="StatusActivity"></activity>
     </application>
     <uses-permission android:name="android.permission.INTERNET" />
 </manifest>
