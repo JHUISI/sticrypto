@@ -8,9 +8,16 @@ import org.jivesoftware.smack.XMPPConnection;
 import org.jivesoftware.smack.XMPPException;
 import org.jivesoftware.smack.packet.Message;
 
+import com.google.gson.Gson;
+
 import android.app.Activity;
+import android.content.Intent;
 import android.os.AsyncTask;
+import android.os.Bundle;
 import android.util.Log;
+import android.view.View;
+import android.view.View.OnClickListener;
+import android.widget.Button;
 import android.widget.TextView;
 
 public class VerifierTask extends AsyncTask<String, Void, StdTestResult> {
@@ -21,6 +28,7 @@ public class VerifierTask extends AsyncTask<String, Void, StdTestResult> {
 	private final String tag= VerifierTask.class.getName();
 	private final Activity activity;
 	private final Notifier<Message> mutex = new Notifier<Message>();
+	private final Gson gson = new Gson();
 	public VerifierTask(String proverId, String verifierId, String password,
 			String chatServer, Activity activity) {
 		super();
@@ -58,11 +66,9 @@ public class VerifierTask extends AsyncTask<String, Void, StdTestResult> {
 		try{
 			chat.sendMessage("hello");
 			Log.v(tag,"done waiting");
-			StdTestResult t = new StdTestResult();
 			// fix me handle null
 			Message m = mutex.waitForMessage();
-			t.name= m.getBody();
-			return t;
+			return gson.fromJson(m.getBody(), StdTestResult.class);
 		}catch(XMPPException e){
 			Log.e(this.tag,"Verifier unable to send hello message",e);
 			throw e;
@@ -81,8 +87,18 @@ public class VerifierTask extends AsyncTask<String, Void, StdTestResult> {
 		}
 	}
 	
-	protected void onPostExecute(StdTestResult t){
+	@Override
+	protected void onPostExecute(final StdTestResult t){
 		((TextView) activity.findViewById(R.id.t)).setText(t.name);
+		final Button share = (Button) activity.findViewById(R.id.share);
+
+		Log.v("STD", "changing intents");
+		Intent i = new Intent(activity.getApplicationContext(), StatusActivity.class);
+		Bundle b = new Bundle();
+		b.putSerializable(VisavisActivity.data_tag, t);
+		i.putExtras(b);
+		activity.startActivity(i);
+	
 	}
 	
 
