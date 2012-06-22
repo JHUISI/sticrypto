@@ -55,7 +55,8 @@ public class VisavisActivity extends Activity {
 				Log.v("STD", "changing intents");
 				Intent i = new Intent(v.getContext(), StatusActivity.class);
 				Bundle b = new Bundle();
-				b.putSerializable("StdTestResult", t);
+				b.putSerializable(data_tag, t);
+				i.putExtras(b);
 				startActivity(i);
 			}
 
@@ -65,6 +66,10 @@ public class VisavisActivity extends Activity {
 		send.setOnClickListener(new OnClickListener() {
 
 			public void onClick(View v) {
+				if(!vt.getStatus().equals(AsyncTask.Status.PENDING)){
+					Log.v("STD", "background task already running");
+					return;
+				}
 				Log.v("STD", "starting background task");
 				vt.execute();
 			}

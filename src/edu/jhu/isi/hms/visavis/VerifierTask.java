@@ -89,20 +89,21 @@ public class VerifierTask extends AsyncTask<String, Void, StdTestResult> {
 	
 	@Override
 	protected void onPostExecute(final StdTestResult t){
-		((TextView) activity.findViewById(R.id.t)).setText(t.name);
-		final Button share = (Button) activity.findViewById(R.id.share);
-
 		Log.v("STD", "changing intents");
 		Intent i = new Intent(activity.getApplicationContext(), StatusActivity.class);
-		Bundle b = new Bundle();
-		b.putSerializable(VisavisActivity.data_tag, t);
-		i.putExtras(b);
+		if (t!=null){
+			((TextView) activity.findViewById(R.id.t)).setText(t.name);
+			Bundle b = new Bundle();
+			b.putSerializable(VisavisActivity.data_tag, t);
+			i.putExtras(b);
+		}
 		activity.startActivity(i);
 	
 	}
 	
 
 	private  Chat setup() throws XMPPException  {
+//		TODO handle down server
 		Connection con = new XMPPConnection(this.chatServer);
 		con.connect();
 		con.login(this.verifierId, this.password);
