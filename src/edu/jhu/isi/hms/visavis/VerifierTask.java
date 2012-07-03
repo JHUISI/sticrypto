@@ -1,124 +1,89 @@
 package edu.jhu.isi.hms.visavis;
 
 import org.jivesoftware.smack.Chat;
-
 import org.jivesoftware.smack.Connection;
 import org.jivesoftware.smack.MessageListener;
-import org.jivesoftware.smack.XMPPConnection;
 import org.jivesoftware.smack.XMPPException;
 import org.jivesoftware.smack.packet.Message;
-
-import com.google.gson.Gson;
 
 import android.app.Activity;
 import android.content.Intent;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.util.Log;
-import android.view.View;
-import android.view.View.OnClickListener;
-import android.widget.Button;
 import android.widget.TextView;
 
+import com.google.gson.Gson;
+
 public class VerifierTask extends AsyncTask<String, Void, StdTestResult> {
+	
 	private final String proverId;
-	private final String verifierId;
-	private final String chatServer;
-	private final String password;
+	private final Connection connection;
+	private final String chatServerHost;
 	private final String tag= VerifierTask.class.getName();
 	private final Activity activity;
 	private final Notifier<Message> mutex = new Notifier<Message>();
 	private final Gson gson = new Gson();
-	public VerifierTask(String proverId, String verifierId, String password,
-			String chatServer, Activity activity) {
+	
+	public VerifierTask (String proverId, String chatServerHost,
+			Connection connection, Activity activity) {
 		super();
 		this.proverId = proverId;
-		this.verifierId = verifierId;
-		this.chatServer = chatServer;
-		this.password = password;
+		this.connection = connection;
 		this.activity = activity;
-		
+		this.chatServerHost=chatServerHost;
 	}
 
 	@Override
 	protected StdTestResult doInBackground(String... params) {
+		Log.v(tag,"Verify called");
+		Chat chat;
 		try {
-			Chat chat = setup();
-			try
-			{
-				return protocol(chat);
-			} catch (XMPPException e) {
-				Log.e(this.tag,"Unable to execute protocol",e);
-			}
+			chat = setupChat();
+			return verify(chat);
 		} catch (XMPPException e) {
-			Log.e(this.tag,"Unable to set up chat",e);
+			// TODO Auto-generated catch block
+			e.printStackTrace();
 		}
 		return null;
 	}
-	
-	private StdTestResult protocol(Chat chat) throws XMPPException{
-		StdTestResult t = verify(chat);
-		//proof(char);
-		return t;
-	}
-	
 	private StdTestResult verify(Chat chat)throws XMPPException {
-		try{
-			chat.sendMessage("hello");
-			Log.v(tag,"done waiting");
-			// fix me handle null
-			Message m = mutex.waitForMessage();
-			return gson.fromJson(m.getBody(), StdTestResult.class);
-		}catch(XMPPException e){
-			Log.e(this.tag,"Verifier unable to send hello message",e);
-			throw e;
-		}
-	}
-	
-	private void proof(Chat chat) throws XMPPException{
-		try{
-			Log.v(tag,"Proover waiting on hello");
-			Message m = mutex.waitForMessage();
-			chat.sendMessage("sample std result");
-			return;
-		}catch(XMPPException e){
-			Log.e(this.tag,"Verifier unable to send hello message",e);
-			throw e;
-		}
+		chat.sendMessage("hello");
+		Message m=mutex.waitForMessage();
+		chat.sendMessage("You said:"+m.getBody());
+		m=mutex.waitForMessage();
+		chat.sendMessage("You said:"+m.getBody());
+		return null;
+		//return gson.fromJson(m.getBody(), StdTestResult.class);
 	}
 	
 	@Override
 	protected void onPostExecute(final StdTestResult t){
 		Log.v("STD", "changing intents");
 		Intent i = new Intent(activity.getApplicationContext(), StatusActivity.class);
+		System.out.println(t+" postExecute");
 		if (t!=null){
-			((TextView) activity.findViewById(R.id.t)).setText(t.name);
 			Bundle b = new Bundle();
 			b.putSerializable(VisavisActivity.data_tag, t);
 			i.putExtras(b);
+			activity.startActivity(i);
 		}
-		activity.startActivity(i);
 	
 	}
 	
 
-	private  Chat setup() throws XMPPException  {
-//		TODO handle down server
-		Connection con = new XMPPConnection(this.chatServer);
-		con.connect();
-		con.login(this.verifierId, this.password);
-		final Chat newChat = con.getChatManager().createChat(makeaddress(),
+	private  Chat setupChat() throws XMPPException  {
+		final Chat newChat = connection.getChatManager().createChat(makeaddress(),
 				new MessageListener() {
 					public void processMessage(Chat chat, Message message) {
-						Log.v(tag,String.format("message recieved: %s", message));
+						Log.v(tag,String.format("message recieved: %s", message.getBody()));
 						mutex.messageArived(message);
 					}
 				});
 		return newChat;	
-	}
+	} 
 	
 	private String makeaddress(){
-		return proverId +"@"+chatServer;
+		return proverId +"@"+chatServerHost+"/Smack";
 	}
-
 }

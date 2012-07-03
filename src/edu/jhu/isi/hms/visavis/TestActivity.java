@@ -1,20 +1,15 @@
 package edu.jhu.isi.hms.visavis;
 
-import java.util.List;
-
 import android.app.Activity;
-import android.content.Context;
 import android.content.Intent;
-import android.content.pm.PackageManager;
 import android.content.res.Resources;
 import android.graphics.Bitmap;
-import android.net.Uri;
+import android.graphics.Point;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.Display;
 import android.view.View;
 import android.view.View.OnClickListener;
-import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.ImageView;
 
@@ -24,48 +19,16 @@ import com.google.zxing.common.BitMatrix;
 import com.google.zxing.qrcode.QRCodeWriter;
 
 
-public class ShareActivity extends Activity {
+public class TestActivity extends Activity {
 
 	private Protocal protocal;
-	/** Called when the activity is first created. */
-	
-	final String scannerIntent="com.google.zxing.client.android.SCAN";
 	private final String tag= Protocal.class.getName();
+	/** Called when the activity is first created. */
 	@Override
-	public void onResume(){
-		super.onResume();
-		
-		//check for scanner app
-	    Intent scanner = new Intent(scannerIntent);
-	    PackageManager pkg=getPackageManager();
-	    List scannerApps=pkg.queryIntentActivities(scanner, PackageManager.MATCH_DEFAULT_ONLY);
-	    if(scannerApps.size()==0){
-	    	//If no app is installed, provide link to market, and wait for the button to be pushed
-		    final Notifier<Integer> pauser= new Notifier<Integer>();
-	    	setContentView(R.layout.scanner_download);
-	    	final Button install = (Button) findViewById(R.id.readerInstall);
-	    	install.setOnClickListener(new OnClickListener() {
-				public void onClick(View v) {
-					Intent i = new Intent(Intent.ACTION_VIEW);
-				    i.setData(Uri.parse("market://details?id=com.google.zxing.client.android"));
-				    i.addFlags(Intent.FLAG_ACTIVITY_NO_HISTORY | Intent.FLAG_ACTIVITY_CLEAR_WHEN_TASK_RESET);
-				    startActivity(i);
-				}
-			});
-	    	return;
-	    }
+	public void onCreate(Bundle savedInstanceState) {
+	    Log.i(tag,"running test");
+	    super.onCreate(savedInstanceState);
 	    
-	    //set layout based on orientation 
-	    WindowManager winMan = (WindowManager) getBaseContext().getSystemService(Context.WINDOW_SERVICE);
-	    int orientation = winMan.getDefaultDisplay().getOrientation();
-	    if (orientation == 0)
-	    	setContentView(R.layout.share);
-	    else if (orientation == 1)
-	    	setContentView(R.layout.share_landscape);
-	    else
-	    	setContentView(R.layout.share);
-	    	Log.e(tag,"Unknown phone orientation: "+orientation);
-	    	
 	    //set the qrCode img
 		QRCodeWriter writer=new QRCodeWriter();
 		BitMatrix qrCode=null;
@@ -88,6 +51,7 @@ public class ShareActivity extends Activity {
 		int DispWidth=display.getWidth();
 		int scaleFactor=DispWidth/qrCodeBmp.getHeight();
 		qrCodeBmp=Bitmap.createScaledBitmap(qrCodeBmp, qrCodeBmp.getWidth()*scaleFactor, qrCodeBmp.getHeight()*scaleFactor, false);
+	    setContentView(R.layout.share);
 		ImageView out=(ImageView) findViewById(R.id.qrCode);
 		out.setImageBitmap(qrCodeBmp);
 		
@@ -96,22 +60,21 @@ public class ShareActivity extends Activity {
 		scan.setOnClickListener(new OnClickListener() {
 			public void onClick(View v) {
 					//TODO check that a suitable app is installed, or use integrated code
-					Intent intent = new Intent(scannerIntent);
+					Intent intent = new Intent("com.google.zxing.client.android.SCAN");
 					intent.putExtra("SCAN_MODE", "QR_CODE_MODE");
 					startActivityForResult(intent, 0);
 				}
 		});
 		
-		//Start protocol in the background
 		Resources res= getResources();
-		String username=res.getString(R.string.username);
-		String password=res.getString(R.string.password);
+		String username="bob";
+		String password="password";
 		String chatServerIp= res.getString(R.string.XMPPServer);
 		String chatServerHost= res.getString(R.string.XMPPVirtualhost);
 		protocal=new Protocal(username, password, chatServerIp,chatServerHost, this);
 		protocal.execute();
+		
 	}
-	
 	protected void onActivityResult(int requestCode, int resultCode, Intent intent) {
 		if (requestCode == 0) {//qrCode scan
 			if (resultCode == RESULT_OK) {
@@ -123,8 +86,7 @@ public class ShareActivity extends Activity {
 	}
 	
 	protected String dataForQrCode(){
-		Resources res= getResources();
-		return (res.getString(R.string.username));
+		return ("bob");
 	}
 	
 }
